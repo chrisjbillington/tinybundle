@@ -27,8 +27,8 @@ int main(int argc, char **argv){
     FILE *thisfile;
     char *infilename;
     FILE *infile;
-    char ch;
     int i;
+    int j;
     int filesize;
     int name_length;
     unsigned int checksum;
@@ -60,8 +60,7 @@ int main(int argc, char **argv){
     // write the bootstrapper from the executable to the output file:
     fseek(thisfile, -BOOTSTRAPPER_SIZE, SEEK_END);
     for(i=0; i<BOOTSTRAPPER_SIZE; i++){
-        ch=getc(thisfile);
-        putc(ch, outfile);
+        putc(getc(thisfile), outfile);
     }
     
     // close executable file:
@@ -110,8 +109,8 @@ int main(int argc, char **argv){
         fwrite(&filesize, sizeof(int), 1, outfile);
         
         // write the contents of the input file to the output file:
-        while((ch=getc(infile))!=EOF){
-            putc(ch, outfile);
+        for(j=0; j<filesize; j++){
+            putc(getc(infile), outfile);
         }
         // close the input file:
         fclose(infile);

@@ -8,6 +8,8 @@
 // If linux:
 #define pathsep  '/'
 
+#define PATH_MAX 4096
+
 // input format:
 // Bootstrapper - BOOTSTRAPPER_SIZE
 // checksum - int
@@ -21,14 +23,13 @@
 //   file - size of file
 
 int mkdirp(char *path, int final){
-    char partialpath[1024];
+    char partialpath[PATH_MAX];
     int i;
     for(i=0; i < strlen(path)-!final; i++){
         partialpath[i] = path[i];
         partialpath[i+1] = 0;
         if((path[i]==pathsep)||(path[i+1]==0)){
             // _mkdir(partialpath); on windows
-/*            fprintf(stdout, "partialpath is %s\n", partialpath);*/
             if(mkdir(partialpath, 0777)<0){
                 if(errno!=EEXIST){
                     return -1;
@@ -40,11 +41,12 @@ int mkdirp(char *path, int final){
 
 int main(int argc, char **argv){
     int n_files;
+    char executable[PATH_MAX];
     char *s;
-    char outfilename[1024];
-    char outfile_abspath[1024];
+    char outfilename[PATH_MAX];
+    char outfile_abspath[PATH_MAX];
     char *basename;
-    char tempdir[1024];
+    char tempdir[PATH_MAX];
     FILE *outfile;
     FILE *infile;
     int i;
@@ -82,8 +84,7 @@ int main(int argc, char **argv){
     fread(&n_files, sizeof(int), 1, infile);
     
     // make the temporary folder we'll be using:
-    // possibly linux only, snprintf might not exist on windows - maybe use sprintf and risk segfault instead:
-    snprintf(tempdir, 1023, "%s%c%s_%u/", tmp, pathsep, basename, checksum);
+    sprintf(tempdir, "%s%c%s_%u/", tmp, pathsep, basename, checksum);
     if(mkdirp(tempdir, 1)<0){
         fprintf(stderr, "Can't create directory %s: %s\n", tempdir, strerror(errno));
         return 1;
@@ -120,8 +121,12 @@ int main(int argc, char **argv){
         if (chmod(outfile_abspath, filemode) < 0){
             fprintf(stderr, "Could not set file permissions on output file %s: %s\n", outfile_abspath, strerror(errno));
         }
+        if(i==0){
+            strcpy(executable, outfile_abspath);
+        }
     }
     fclose(infile);
+    execv(executable, argv);
     return 0;
 }
 
