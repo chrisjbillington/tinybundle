@@ -7,6 +7,7 @@ assert not os.system('gcc bundler.c -o bundler')
 assert not os.system('gcc bootstrapper.c -o bootstrapper')
 actual_bootstrapper_size = os.path.getsize('bootstrapper')
 required_padding = BOOTSTRAPPER_SIZE - actual_bootstrapper_size
+print '[bootstrapper size is %d bytes]'%actual_bootstrapper_size
 assert required_padding >= 0
 with open('bootstrapper','ab') as f:
     f.write('\x00'*required_padding)
