@@ -2,14 +2,15 @@
 #include <sys/types.h> 
 #include <sys/stat.h> 
 #include <string.h>
+#include <errno.h>
 
 #define BOOTSTRAPPER_SIZE 15000
 
 
-// Format:
-// Boostrapper - BOOTSTRAPPER_SIZE
-// Number of files - int
+// output format:
+// Bootstrapper - BOOTSTRAPPER_SIZE
 // checksum - int
+// Number of files - int
 // for each file:
 //   size of filename - int
 //   filename - size of filename
@@ -45,14 +46,14 @@ int main(int argc, char **argv){
     // Open the output file for writing:
     outfile = fopen(outfilename, "wb");
     if(outfile==NULL){
-        fprintf(stderr, "Can't open output file %s for writing\n", outfilename);
+        fprintf(stderr, "Can't open output file %s for writing: %s\n", outfilename, strerror(errno));
         return 1;
     }    
     
     // have the executable open itself for reading:
     thisfile = fopen(argv[0], "rb");
     if(thisfile==NULL){
-        fprintf(stderr, "Executable (%s) can't open itself for reading\n", argv[0]);
+        fprintf(stderr, "Can't open %s for reading: %s\n", argv[0], strerror(errno));
         return 1;
     }   
     
@@ -98,7 +99,7 @@ int main(int argc, char **argv){
         // open the input file for reading:
         infile = fopen(infilename, "rb");
         if(infile==NULL){
-            fprintf(stderr, "Can't open input file %s for reading\n", infilename);
+            fprintf(stderr, "Can't open input file %s for reading: %s\n", infilename, strerror(errno));
             return 1;
         }
         
@@ -121,7 +122,7 @@ int main(int argc, char **argv){
     // reopen the output file in rw mode, so we can compute the checksum:
     outfile = fopen(outfilename, "r+b");
     if(outfile==NULL){
-        fprintf(stderr, "Can't open output file %s in read/write mode\n", outfilename);
+        fprintf(stderr, "Can't open output file %s in read/write mode: %s\n", outfilename, strerror(errno));
         return 1;
     }
     // compute the checksum of the payload, chunking by the size of an int:
@@ -139,7 +140,7 @@ int main(int argc, char **argv){
     
     // if linux:
     if (chmod(outfilename, output_filemode) < 0){
-        fprintf(stderr, "Could not set file permissions on output file %s\n", outfilename);
+        fprintf(stderr, "Could not set file permissions on output file %s: %s\n", outfilename, strerror(errno));
     }
     
     return 0;
