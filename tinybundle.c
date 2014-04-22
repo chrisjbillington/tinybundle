@@ -13,7 +13,7 @@
 //   filename - size of filename
 //   if linux:
 //     filemode - int
-//   size of file - int
+//   size of file - long
 //   file - size of file
 
 
@@ -26,7 +26,7 @@ int main(int argc, char **argv){
     FILE *infile;
     int i;
     int j;
-    int filesize;
+    long filesize;
     int name_length;
     unsigned int checksum;
     unsigned int readbuffer;
@@ -103,7 +103,7 @@ int main(int argc, char **argv){
         fseek(infile, 0, SEEK_END);
         filesize = ftell(infile);
         fseek(infile, 0, SEEK_SET);
-        fwrite(&filesize, sizeof(int), 1, outfile);
+        fwrite(&filesize, sizeof(long), 1, outfile);
         
         // write the contents of the input file to the output file:
         for(j=0; j<filesize; j++){
