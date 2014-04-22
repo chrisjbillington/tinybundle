@@ -49,7 +49,7 @@ int main(int argc, char **argv){
     FILE *infile;
     int i;
     int j;
-    int filesize;
+    long filesize;
     int name_length;
     unsigned int checksum;
     
@@ -96,7 +96,7 @@ int main(int argc, char **argv){
         // read the filemode:
         fread(&filemode, sizeof(int), 1, infile);
         // read the filesize:
-        fread(&filesize, sizeof(int), 1, infile);
+        fread(&filesize, sizeof(long), 1, infile);
         
         strcpy(outfile_abspath, tempdir);
         strcat(outfile_abspath, outfilename);
@@ -124,6 +124,7 @@ int main(int argc, char **argv){
         }
     }
     fclose(infile);
+    argv[0] = executable;
     execv(executable, argv);
     return 0;
 }
