@@ -1,10 +1,7 @@
-#include "bootstrapper.h"
+#include "tinybundle.h"
 
-#include <stdio.h>
 #include <sys/types.h> 
 #include <sys/stat.h> 
-#include <string.h>
-#include <errno.h>
 
 // output format:
 // Bootstrapper - BOOTSTRAPPER_SIZE
@@ -18,6 +15,8 @@
 //   size of file - long
 //   file - size of file
 
+
+// TODO this should prevent creating files which violate the PATH_MAX rule 
 
 int main(int argc, char **argv){
     int n_infiles;
