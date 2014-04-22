@@ -1,15 +1,12 @@
-#include "bootstrapper.h"
+#include "tinybundle.h"
 
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <errno.h>
 
-// If linux:
-#define pathsep  '/'
-
-#define PATH_MAX 4096
-
+#ifdef _WIN32
+#include <direct.h>
+#endif
+            
+            
 // input format:
 // Bootstrapper - BOOTSTRAPPER_SIZE
 // checksum - int
@@ -28,13 +25,21 @@ int mkdirp(char *path, int final){
     for(i=0; i < strlen(path)-!final; i++){
         partialpath[i] = path[i];
         partialpath[i+1] = 0;
-        if((path[i]==pathsep)||(path[i+1]==0)){
-            // _mkdir(partialpath); on windows
-            if(mkdir(partialpath, 0777)<0){
+        if((path[i]==PATHSEP)||(path[i+1]==0)){
+            #ifdef _WIN32
+            if(_mkdir(partialpath7)<0){
                 if(errno!=EEXIST){
                     return -1;
                 }
             }
+            #else
+            if(mkdir(partialpath, 0755)<0){
+                if(errno!=EEXIST){
+                    return -1;
+                }
+            }
+            #endif
+
         }
     }
 }
@@ -63,8 +68,9 @@ int main(int argc, char **argv){
     char *tmp = P_tmpdir;
     
     // what is the basename of this file?
+    // TODO: this is a memory leak
     basename = strdup(argv[0]);
-    while((s = strchr(basename, pathsep))!=NULL){
+    while((s = strchr(basename, PATHSEP))!=NULL){
         basename = strdup(s+1);
     }
     
@@ -84,12 +90,13 @@ int main(int argc, char **argv){
     fread(&n_files, sizeof(int), 1, infile);
     
     // make the temporary folder we'll be using:
-    sprintf(tempdir, "%s%c%s_%u/", tmp, pathsep, basename, checksum);
+    sprintf(tempdir, "%s%c%s_%u/", tmp, PATHSEP, basename, checksum);
     if(mkdirp(tempdir, 1)<0){
         fprintf(stderr, "Can't create directory %s: %s\n", tempdir, strerror(errno));
         return 1;
     }
     for(i=0; i<n_files; i++){
+    	// TODO abstract these to something that returns a struct
         // read the length of the filename:
         fread(&name_length, sizeof(int), 1, infile);
         // read the filename:
@@ -114,17 +121,17 @@ int main(int argc, char **argv){
             return 1;
         }
         
-        // TODO: Replace with fwrite in blocks.
+        // TODO: Replace with fread() and fwrite() in blocks of BLOCK_SIZE.
         for(j=0; j<filesize; j++){
             putc(getc(infile), outfile);
         }
         fclose(outfile);
         
-        // TODO: Isn't chmod in sys/stat.h? Better to use umask() to set file creation mode instead of changing it later.
+        // TODO: chmod is in sys/stat.h? Better to use umask() to set file creation mode instead of changing it later.
         // if linux:
-        if (chmod(outfile_abspath, filemode) < 0){
-            fprintf(stderr, "Could not set file permissions on output file %s: %s\n", outfile_abspath, strerror(errno));
-        }
+       // if (chmod(outfile_abspath, filemode) < 0){
+       //     fprintf(stderr, "Could not set file permissions on output file %s: %s\n", outfile_abspath, strerror(errno));
+       // }
         if(i==0){
             strcpy(executable, outfile_abspath);
         }
@@ -132,8 +139,14 @@ int main(int argc, char **argv){
     fclose(infile);
     argv[0] = executable;
     
-    // TODO execv is from unistd.h, also POSIX. system() is system-independent. Windows' has ShellExecEx in kernel32, which is like double-clicking a file.
-    execv(executable, argv);
+    #ifdef _WIN32
+        // TODO system() or ShellExecEx in kernel32
+    #else
+    	// TODO this should probably return the same return code as the other process
+        execv(executable, argv);
+    #endif
+    
+    // TODO I see lots of strings but no free()
     return 0;
 }
 
