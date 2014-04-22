@@ -1,4 +1,6 @@
 syntax: glob
-tinybundle
-test/test_bundled
-test/test
+bin/*
+src/test/test_bundled
+src/test/test
+src/bootstrapper.h
+
