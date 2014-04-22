@@ -3,8 +3,6 @@
 #include <string.h>
 #include <errno.h>
 
-#define BOOTSTRAPPER_SIZE 15000
-
 // If linux:
 #define pathsep  '/'
 

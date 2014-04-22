@@ -4,9 +4,6 @@
 #include <string.h>
 #include <errno.h>
 
-#define BOOTSTRAPPER_SIZE 15000
-
-
 // output format:
 // Bootstrapper - BOOTSTRAPPER_SIZE
 // checksum - int
