@@ -36,6 +36,13 @@ int main(int argc, char **argv){
     int output_filemode;
     struct stat stat_buf;
     
+    char *usage = "usage: tinybundle your_executable bundled_file_1 bundled_file_2 ... output_file\n";
+    
+    if ((argc<3)||(argv[1]=="-h")||(argv[1]=="--help")){
+        fprintf(stderr, "%s", usage);
+        return 0;
+    }
+    
     // get number of input files and open the output file for writing:
     n_infiles = argc - 2;
     outfilename = argv[argc-1];
@@ -51,6 +58,7 @@ int main(int argc, char **argv){
     thisfile = fopen(argv[0], "rb");
     if(thisfile==NULL){
         fprintf(stderr, "Can't open %s for reading: %s\n", argv[0], strerror(errno));
+        fprintf(stderr, "%s", usage);
         return 1;
     }   
     
@@ -96,6 +104,7 @@ int main(int argc, char **argv){
         infile = fopen(infilename, "rb");
         if(infile==NULL){
             fprintf(stderr, "Can't open input file %s for reading: %s\n", infilename, strerror(errno));
+            fprintf(stderr, "%s", usage);
             return 1;
         }
         
@@ -119,6 +128,7 @@ int main(int argc, char **argv){
     outfile = fopen(outfilename, "r+b");
     if(outfile==NULL){
         fprintf(stderr, "Can't open output file %s in read/write mode: %s\n", outfilename, strerror(errno));
+        fprintf(stderr, "%s", usage);
         return 1;
     }
     // compute the checksum of the payload, chunking by the size of an int:
@@ -137,6 +147,8 @@ int main(int argc, char **argv){
     // if linux:
     if (chmod(outfilename, output_filemode) < 0){
         fprintf(stderr, "Could not set file permissions on output file %s: %s\n", outfilename, strerror(errno));
+        fprintf(stderr, "%s", usage);
+        return 1;
     }
     
     return 0;
