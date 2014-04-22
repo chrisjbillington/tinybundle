@@ -111,10 +111,14 @@ int main(int argc, char **argv){
             fprintf(stderr, "Can't open %s for writing: %s\n", outfile_abspath, strerror(errno));
             return 1;
         }
+        
+        // TODO: Replace with fwrite in blocks.
         for(j=0; j<filesize; j++){
             putc(getc(infile), outfile);
         }
         fclose(outfile);
+        
+        // TODO: Isn't chmod in sys/stat.h? Better to use umask() to set file creation mode instead of changing it later.
         // if linux:
         if (chmod(outfile_abspath, filemode) < 0){
             fprintf(stderr, "Could not set file permissions on output file %s: %s\n", outfile_abspath, strerror(errno));
@@ -125,6 +129,8 @@ int main(int argc, char **argv){
     }
     fclose(infile);
     argv[0] = executable;
+    
+    // TODO execv is from unistd.h, also POSIX. system() is system-independent. Windows' has ShellExecEx in kernel32, which is like double-clicking a file.
     execv(executable, argv);
     return 0;
 }
