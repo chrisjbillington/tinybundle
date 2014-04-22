@@ -1,0 +1,4 @@
+syntax: glob
+tinybundle
+test/test_bundled
+test/test
