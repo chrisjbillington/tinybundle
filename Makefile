@@ -1,5 +1,4 @@
-# TODO: bug is exposed with -O3
-cc=gcc -O2
+cc=gcc -O3 -Wno-unused-result
 
 default: tinybundle
 
