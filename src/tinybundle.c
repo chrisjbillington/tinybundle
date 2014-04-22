@@ -53,6 +53,7 @@ int main(int argc, char **argv){
     outfile = fopen(outfilename, "wb");
     if(outfile==NULL){
         fprintf(stderr, "Can't open output file %s for writing: %s\n", outfilename, strerror(errno));
+        fprintf(stderr, "%s", usage);
         return 1;
     }    
     

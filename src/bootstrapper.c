@@ -37,6 +37,7 @@ int mkdirp(char *path, int final){
             }
         }
     }
+    return 0;
 }
 
 int main(int argc, char **argv){
