@@ -22,6 +22,121 @@
 //   size of file - int
 //   file - size of file
 
+#ifdef _WIN32
+int escape_args(int argc, char **argv, char out[], int outlength){
+    // Do escaping of command line arguments for purposes of feeding to Windows' CreateProcess function.
+    // Returns 0 on success, -1 if length of output array would be exceeded.
+    // Rules are:
+    // Is there whitepace (tab, space) anywhere? If so, start with a quote.
+    // Backslashes before quote? If so, escape them, and escape the quote.
+    // Backslashes at the end? Was there whitespace anywhere? If so, escape the backslashes.
+    // Was there whitespace anywhere? If so, end with a quote.
+    char BACKSLASH = '\\';
+    char SPACE = ' ';
+    char TAB = '\t';
+    char QUOTE = '"';
+    
+    int argcounter; // loop over input args
+    int incounter; // loop over chars of a single arg
+    int outcounter; // loop over the output chararray
+    int slashcounter; // loop over accumulated slashes
+    
+    char *arg;
+    char c;
+    int whitespace;
+    int slashes;
+    int arglen;
+    
+    outcounter = 0;
+    for(argcounter=0; argcounter<argc; argcounter++){
+        arg = argv[argcounter];
+        arglen = strlen(arg);
+        whitespace = 0;
+        slashes = 0;
+        // Whitespace?
+        for(incounter=0; incounter<arglen; incounter++){
+            c = arg[incounter];
+            if((c==SPACE)||(c==TAB)){
+                whitespace = 1;
+                // Start with a quote:
+                if (outcounter >= outlength) return -1;
+                out[outcounter] = QUOTE;
+                outcounter++;
+                break;
+            }   
+        }
+        for(incounter=0; incounter<arglen; incounter++){
+            c = arg[incounter];
+            // Backslash?
+            if(c==BACKSLASH){
+                // Wait until we see if a quote follows before writing it:
+                slashes++;
+            }
+            // Quote?
+            else if(c==QUOTE){
+                // Escape and write any slashes preceding this quote:
+                for (slashcounter=0; slashcounter<slashes; slashcounter++){
+                    if (outcounter >= outlength-1) return -1;
+                    out[outcounter] = BACKSLASH;
+                    out[outcounter+1] = BACKSLASH;
+                    outcounter += 2;
+                }
+                slashes = 0;
+                // Escape and write the quote:
+                if (outcounter >= outlength-1) return -1;
+                out[outcounter] = BACKSLASH;
+                out[outcounter+1] = QUOTE;
+                outcounter += 2;
+            }
+            // Other character?
+            else{
+                // Write any slashes preceding this character:
+                for(slashcounter=0; slashcounter<slashes; slashcounter++){
+                    if (outcounter >= outlength) return -1;
+                    out[outcounter] = BACKSLASH;
+                    outcounter++;
+                }
+                slashes = 0;
+                // Write the character:
+                if (outcounter >= outlength) return -1;
+                out[outcounter] = c;
+                outcounter++;
+            }
+        }
+        // End of string. Was there whitespace?
+        if (whitespace){
+            // We'll be ending in a quote mark, so escape and write any preceding slashes: 
+            for(slashcounter=0; slashcounter<slashes; slashcounter++){
+                if (outcounter >= outlength-1) return -1;
+                out[outcounter] = BACKSLASH;
+                out[outcounter+1] = BACKSLASH;
+                outcounter += 2;
+            }
+            // End with a quote mark:
+            if (outcounter >= outlength) return -1;
+            out[outcounter] = QUOTE;
+            outcounter++;
+        }
+        else{
+            // Won't be ending with a quote mark, so write slashes without escaping them:
+            for(slashcounter=0; slashcounter<slashes; slashcounter++){
+                if (outcounter >= outlength) return -1;
+                out[outcounter] = BACKSLASH;
+                outcounter++;
+            }
+        }
+        // Space before the next arg:
+        if (outcounter >= outlength) return -1;
+        out[outcounter] = SPACE;  
+        outcounter++ ;
+    }
+    // Null terminator
+    if (outcounter >= outlength) return -1;
+    out[outcounter] = 0;
+    return 0;
+}
+#endif
+
 int mkdirp(char *path, int final){
     char partialpath[PATH_MAX];
     int i;
@@ -68,6 +183,9 @@ int main(int argc, char **argv){
     #ifdef _WIN32
     char *tmp = getenv("TEMP");
     char command_string[CMD_MAX];
+    STARTUPINFO si;
+    PROCESS_INFORMATION pi;
+    int retcode;
     #else
     int filemode;
     char *tmp = P_tmpdir;
@@ -163,34 +281,32 @@ int main(int argc, char **argv){
         }
     }
     fclose(infile);
-    
+    // Set argv[0] so the target process sees its own name there, rather than ours:
+    argv[0] = executable;
+        
     #ifdef _WIN32
-        fprintf(stdout, "argv[0] is: %s\nCommand line is:\n%s\n ", argv[0], GetCommandLine())
-        return 0;
-        // We need a single command line string, and
-        // we're sure as hell not going to piece together a
-        // string ourselves by properly escaping the argv. So
-        // we can use GetCommandLine and just replace the
-        // first argument, which is the executable. But the
-        // executable still might have spaces in its path. So
-        // we'll grab the first space that isn't escaped.
-
-        // The command line arguments exclu
-/*        s = strstr(GetCommandLine(), argv[1])*/
-/*        strcpy(command_string, GetCommandLine());*/
-/*        if(strlen(executable) + strlen(command_string))*/
-/*        strcat(command_string, " ");*/
-/*        strcat(executable)*/
-/*        CreateProcess(NULL, strstr(GetCommandLine(), argv[i]), ...);*/
+    escape_args(argc, argv, command_string, CMD_MAX);
+    ZeroMemory( &si, sizeof(si) );
+    si.cb = sizeof(si);
+    ZeroMemory( &pi, sizeof(pi) );
+    if(CreateProcess(NULL, command_string, NULL, NULL, 1, 0, NULL, NULL, &si, &pi)!=0){
+        fprintf(stderr, "Can't execute %s: %s\n", executable, strerror(errno)); // Possibly GetLastError() instead of errno
+    }
+    // Wait for process to end:
+    WaitForSingleObject(pi.hProcess, INFINITE);
+    retcode = GetExitCodeProcess(pi);
+    // Close process and thread handles. 
+    CloseHandle(pi.hProcess);
+    CloseHandle(pi.hThread);
+    return retcode;
     #else
-        // Set argv[0] so the target process sees its own name there, rather than ours:
-        argv[0] = executable;
-        if (execv(executable, argv)<0){
-            fprintf(stderr, "Can't execute %s: %s\n", executable, strerror(errno));
-            return 1;
-        }
+    if (execv(executable, argv)<0){
+        fprintf(stderr, "Can't execute %s: %s\n", executable, strerror(errno));
+        return 1;
+    }
     #endif
     // should not get up to here:
-    return 0;
+    return 1;
 }
+
 
