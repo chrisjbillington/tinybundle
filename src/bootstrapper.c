@@ -62,7 +62,7 @@ int main(int argc, char **argv){
     long filesize;
     int name_length;
     unsigned int checksum;
-    char *copybuffer[BLOCK_SIZE];
+    char copybuffer[BLOCK_SIZE];
     
     #ifdef _WIN32
     char *tmp = getenv("TEMP");
