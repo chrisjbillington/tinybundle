@@ -18,8 +18,6 @@
 //   file - size of file
 
 
-// TODO this should prevent creating files which violate the PATH_MAX rule 
-
 int main(int argc, char **argv){
     int n_infiles;
     char *outfilename;
@@ -157,13 +155,13 @@ int main(int argc, char **argv){
     // close the output file:
     fclose(outfile);
     
-    // if linux:
+    #ifndef _WIN32
     if (chmod(outfilename, output_filemode) < 0){
         fprintf(stderr, "Could not set file permissions on output file %s: %s\n", outfilename, strerror(errno));
         fprintf(stderr, "%s", usage);
         return 1;
     }
-    
+    #endif
     return 0;
 }
 
