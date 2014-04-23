@@ -123,6 +123,10 @@ int main(int argc, char **argv){
         
         // create the output file, including parent directories if required:
         strcpy(outfile_abspath, tempdir);
+        if (strlen(outfilename) + strlen(tempdir) > PATH_MAX){
+            fprintf(stderr, "Destination filepath %s%s is too long (>%d chars):", tempdir, outfilename, PATH_MAX-1);
+            return 1;
+        }
         strcat(outfile_abspath, outfilename);
         if(mkdirp(outfile_abspath, 0)<0){
             fprintf(stderr, "Can't create directories for %s: %s\n", outfile_abspath, strerror(errno));
