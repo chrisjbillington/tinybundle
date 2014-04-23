@@ -33,6 +33,7 @@ int main(int argc, char **argv){
     int name_length;
     unsigned int checksum;
     unsigned int readbuffer;
+    char *copybuffer[BLOCK_SIZE];
     
     #ifndef _WIN32
     int filemode;
@@ -69,9 +70,12 @@ int main(int argc, char **argv){
     
     // write the bootstrapper from the executable to the output file:
     fseek(thisfile, -BOOTSTRAPPER_SIZE, SEEK_END);
-    for(i=0; i<BOOTSTRAPPER_SIZE; i++){
-        putc(getc(thisfile), outfile);
+    for(i=0; i<BOOTSTRAPPER_SIZE/BLOCK_SIZE; i++){
+        fread(&copybuffer, sizeof(char), BLOCK_SIZE, thisfile);
+        fwrite(&copybuffer, sizeof(char), BLOCK_SIZE, outfile);
     }
+    fread(&copybuffer, sizeof(char), BOOTSTRAPPER_SIZE % BLOCK_SIZE, thisfile);
+    fwrite(&copybuffer, sizeof(char), BOOTSTRAPPER_SIZE % BLOCK_SIZE, outfile);
     
     // close executable file:
     fclose(thisfile);
@@ -119,11 +123,15 @@ int main(int argc, char **argv){
         fseek(infile, 0, SEEK_SET);
         fwrite(&filesize, sizeof(long), 1, outfile);
         
-        // write the contents of the input file to the output file:
-        for(j=0; j<filesize; j++){
-            putc(getc(infile), outfile);
+        // Copy the file's contents to the output file:
+        for(j=0; j<filesize/BLOCK_SIZE; j++){
+            fread(&copybuffer, sizeof(char), BLOCK_SIZE, infile);
+            fwrite(&copybuffer, sizeof(char), BLOCK_SIZE, outfile);
         }
-        // close the input file:
+        fread(&copybuffer, sizeof(char), filesize % BLOCK_SIZE, infile);
+        fwrite(&copybuffer, sizeof(char), filesize % BLOCK_SIZE, outfile);
+        
+        // We're done with this file:
         fclose(infile);
     }
     // close the output file:
