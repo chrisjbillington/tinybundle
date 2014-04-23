@@ -11,6 +11,7 @@
 // System-specific code
 #ifdef _WIN32
 #define PATHSEP '\\'
+#define CMD_MAX = 8191
 #else
 #define PATHSEP '/'
 #endif

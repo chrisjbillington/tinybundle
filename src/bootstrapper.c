@@ -4,6 +4,7 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#include <windows.h>
 #else
 #include <sys/stat.h>
 #endif
@@ -66,6 +67,7 @@ int main(int argc, char **argv){
     
     #ifdef _WIN32
     char *tmp = getenv("TEMP");
+    char command_string[CMD_MAX];
     #else
     int filemode;
     char *tmp = P_tmpdir;
@@ -162,12 +164,27 @@ int main(int argc, char **argv){
     }
     fclose(infile);
     
-    // Set argv[0] so the target process sees its own name there, rather than ours:
-    argv[0] = executable;
-    
     #ifdef _WIN32
-        // TODO system() or ShellExecEx in kernel32
+        fprintf(stdout, "argv[0] is: %s\nCommand line is:\n%s\n ", argv[0], GetCommandLine())
+        return 0;
+        // We need a single command line string, and
+        // we're sure as hell not going to piece together a
+        // string ourselves by properly escaping the argv. So
+        // we can use GetCommandLine and just replace the
+        // first argument, which is the executable. But the
+        // executable still might have spaces in its path. So
+        // we'll grab the first space that isn't escaped.
+
+        // The command line arguments exclu
+/*        s = strstr(GetCommandLine(), argv[1])*/
+/*        strcpy(command_string, GetCommandLine());*/
+/*        if(strlen(executable) + strlen(command_string))*/
+/*        strcat(command_string, " ");*/
+/*        strcat(executable)*/
+/*        CreateProcess(NULL, strstr(GetCommandLine(), argv[i]), ...);*/
     #else
+        // Set argv[0] so the target process sees its own name there, rather than ours:
+        argv[0] = executable;
         if (execv(executable, argv)<0){
             fprintf(stderr, "Can't execute %s: %s\n", executable, strerror(errno));
             return 1;
