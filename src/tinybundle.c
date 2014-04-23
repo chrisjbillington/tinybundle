@@ -1,7 +1,9 @@
 #include "tinybundle.h"
 
+#ifndef _WIN32
 #include <sys/types.h> 
 #include <sys/stat.h> 
+#endif
 
 // output format:
 // Bootstrapper - BOOTSTRAPPER_SIZE
@@ -32,10 +34,11 @@ int main(int argc, char **argv){
     unsigned int checksum;
     unsigned int readbuffer;
     
-    // possibly linux only:
+    #ifndef _WIN32
     int filemode;
     int output_filemode;
     struct stat stat_buf;
+    #endif
     
     char *usage = "usage: tinybundle your_executable bundled_file_1 bundled_file_2 ... output_file\n";
     
@@ -91,7 +94,7 @@ int main(int argc, char **argv){
         // write the input file's filename to the output file:
         fprintf(outfile, "%s", infilename);
         
-        // possibly linux only:
+        #ifndef _WIN32
         // write the file mode to the file:
         stat(argv[i], &stat_buf);
         filemode = stat_buf.st_mode;
@@ -101,7 +104,7 @@ int main(int argc, char **argv){
             // can set the mode of the output file the same:
             output_filemode = filemode;
         }
-        
+        #endif
         // open the input file for reading:
         infile = fopen(infilename, "rb");
         if(infile==NULL){

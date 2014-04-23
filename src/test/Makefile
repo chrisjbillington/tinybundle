@@ -1,12 +1,19 @@
 cc=gcc
-tinybundle=./../../bin/tinybundle
+
+UNAME := $(shell uname)
+ifeq ($(UNAME), Windows_NT)
+extension=.exe
+endif
+
+tinybundle=./../../bin/tinybundle$(extension)
 
 default:
-	$(cc) test.c -o test
+	$(cc) test.c -o test$(extension)
 	
 bundled: default
-	$(tinybundle) test file_1.txt file_2.txt test_bundled
-	rm test
+	$(tinybundle) test$(extension) file_1.txt file_2.txt test_bundled$(extension)
+	rm test$(extension)
 	
 clean:
-	rm -f test test_bundled
+	rm -f test$(extension) test_bundled$(extension)
+	

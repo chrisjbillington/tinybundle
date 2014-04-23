@@ -4,6 +4,8 @@
 
 #ifdef _WIN32
 #include <direct.h>
+#else
+#include <sys/stat.h>
 #endif
             
             
@@ -27,7 +29,7 @@ int mkdirp(char *path, int final){
         partialpath[i+1] = 0;
         if((path[i]==PATHSEP)||(path[i+1]==0)){
             #ifdef _WIN32
-            if(_mkdir(partialpath7)<0){
+            if(_mkdir(partialpath)<0){
                 if(errno!=EEXIST){
                     return -1;
                 }
@@ -61,12 +63,12 @@ int main(int argc, char **argv){
     int name_length;
     unsigned int checksum;
     
-    // possibly linux only:
+    #ifdef _WIN32
+    char *tmp = getenv("TEMP");
+    #else
     int filemode;
-    
-    // where is the temporary directory?
-    // possibly linux only, check TEMP environment variable in Windows:
     char *tmp = P_tmpdir;
+    # endif
     
     // what is the basename of this file?
     // TODO: this is a memory leak
@@ -102,9 +104,10 @@ int main(int argc, char **argv){
         fread(&name_length, sizeof(int), 1, infile);
         // read the filename:
         fread(&outfilename, name_length, 1, infile);
-        // linux only
+        #ifndef _WIN32
         // read the filemode:
         fread(&filemode, sizeof(int), 1, infile);
+        #endif
         // read the filesize:
         fread(&filesize, sizeof(long), 1, infile);
         
@@ -128,12 +131,13 @@ int main(int argc, char **argv){
         }
         fclose(outfile);
         
-        // TODO: chmod is in sys/stat.h? Better to use umask() to set file creation mode instead of changing it later.
-        // if linux:
-       // if (chmod(outfile_abspath, filemode) < 0){
-       //     fprintf(stderr, "Could not set file permissions on output file %s: %s\n", outfile_abspath, strerror(errno));
-       // }
+        #ifndef _WIN32
+        if (chmod(outfile_abspath, filemode) < 0){
+           fprintf(stderr, "Could not set file permissions on output file %s: %s\n", outfile_abspath, strerror(errno));
+        }
+        #endif
         if(i==0){
+            // First file. Remember this filepath - it is the executable we want to run when we're done unpacking.
             strcpy(executable, outfile_abspath);
         }
     }
@@ -143,11 +147,15 @@ int main(int argc, char **argv){
     #ifdef _WIN32
         // TODO system() or ShellExecEx in kernel32
     #else
-    	// TODO this should probably return the same return code as the other process
-        execv(executable, argv);
+        if (execv(executable, argv)<0){
+            fprintf(stderr, "Can't execute %s: %s\n", executable, strerror(errno));
+            return 1;
+        }
     #endif
     
     // TODO I see lots of strings but no free()
+    
+    // should not get up to here:
     return 0;
 }
 
