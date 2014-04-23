@@ -53,7 +53,7 @@ int main(int argc, char **argv){
     char *s;
     char outfilename[PATH_MAX];
     char outfile_abspath[PATH_MAX];
-    char *basename;
+    char basename[PATH_MAX];
     char tempdir[PATH_MAX];
     FILE *outfile;
     FILE *infile;
@@ -72,12 +72,22 @@ int main(int argc, char **argv){
     # endif
     
     // what is the basename of this file?
-    // TODO: this is a memory leak
-    basename = strdup(argv[0]);
+    strcpy(basename, argv[0]);
     while((s = strchr(basename, PATHSEP))!=NULL){
-        basename = strdup(s+1);
+        strcpy(basename, s+1);
     }
     
+    #ifdef _WIN32
+    // Strip the .exe extension off the end by replacing the last dot with a null char:
+    if((s = strchr(basename, '.'))!=NULL){
+        fprintf(stderr, "s is %s\n", s);
+        if((strcmp(s, ".exe")==0)||(strcmp(s, ".EXE")==0)){
+            fprintf(stderr, "s is %s\n", s);
+            s[0] = 0;
+        }
+    }
+    #endif
+
     // have the executable open itself for reading:
     infile = fopen(argv[0], "rb");
     if(infile==NULL){
@@ -147,6 +157,8 @@ int main(int argc, char **argv){
         }
     }
     fclose(infile);
+    
+    // Set argv[0] so the target process sees its own name there, rather than ours:
     argv[0] = executable;
     
     #ifdef _WIN32
@@ -157,9 +169,6 @@ int main(int argc, char **argv){
             return 1;
         }
     #endif
-    
-    // TODO I see lots of strings but no free()
-    
     // should not get up to here:
     return 0;
 }
