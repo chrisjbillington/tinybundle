@@ -33,7 +33,7 @@ int main(int argc, char **argv){
     int name_length;
     unsigned int checksum;
     unsigned int readbuffer;
-    char *copybuffer[BLOCK_SIZE];
+    char copybuffer[BLOCK_SIZE];
     
     #ifndef _WIN32
     int filemode;
