@@ -62,6 +62,7 @@ int main(int argc, char **argv){
     long filesize;
     int name_length;
     unsigned int checksum;
+    char *copybuffer[BLOCK_SIZE];
     
     #ifdef _WIN32
     char *tmp = getenv("TEMP");
@@ -99,7 +100,6 @@ int main(int argc, char **argv){
         return 1;
     }
     for(i=0; i<n_files; i++){
-    	// TODO abstract these to something that returns a struct
         // read the length of the filename:
         fread(&name_length, sizeof(int), 1, infile);
         // read the filename:
@@ -111,9 +111,9 @@ int main(int argc, char **argv){
         // read the filesize:
         fread(&filesize, sizeof(long), 1, infile);
         
+        // create the output file, including parent directories if required:
         strcpy(outfile_abspath, tempdir);
         strcat(outfile_abspath, outfilename);
-        // create the output file, including parent directories if required:
         if(mkdirp(outfile_abspath, 0)<0){
             fprintf(stderr, "Can't create directories for %s: %s\n", outfile_abspath, strerror(errno));
             return 1;
@@ -125,10 +125,15 @@ int main(int argc, char **argv){
             return 1;
         }
         
-        // TODO: Replace with fread() and fwrite() in blocks of BLOCK_SIZE.
-        for(j=0; j<filesize; j++){
-            putc(getc(infile), outfile);
+        // Copy the data to the output file:
+        for(j=0; j<filesize/BLOCK_SIZE; j++){
+            fread(&copybuffer, sizeof(char), BLOCK_SIZE, infile);
+            fwrite(&copybuffer, sizeof(char), BLOCK_SIZE, outfile);
         }
+        fread(&copybuffer, sizeof(char), filesize % BLOCK_SIZE, infile);
+        fwrite(&copybuffer, sizeof(char), filesize % BLOCK_SIZE, outfile);
+        
+        // We're done with the output file:    
         fclose(outfile);
         
         #ifndef _WIN32
